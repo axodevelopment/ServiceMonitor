@@ -63,6 +63,7 @@ func main() {
 		}
 	}()
 
+	fmt.Println("ListenAndServe... Starting")
 	// Start the server
 	http.ListenAndServe(":8080", nil)
 }
