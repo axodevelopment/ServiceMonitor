@@ -9,7 +9,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// Define custom metrics
+/*
+my_app_up
+  - This will be the metric in OCP in Observe -> Metrics
+  - Help will be what is displayed as an highlight text.
+    ex - my_app_up	prometheus-example-app	web	10.129.0.88:8080	prometheus-example-app	servicemonitor-a	prometheus-example-app-df46974dc-lb2fh	openshift-user-workload-monitoring/user-workload	prometheus-example-app	1
+*/
 var (
 	upGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "my_app_up",
@@ -25,37 +30,33 @@ var (
 )
 
 func init() {
-	// Register custom metrics
 	prometheus.MustRegister(upGauge)
 	prometheus.MustRegister(requestCount)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	// Increment request counter based on the status
 	status := "200"
 	if r.URL.Path == "/error" {
 		status = "500"
 	}
 	requestCount.WithLabelValues(status).Inc()
 
-	// Set the 'up' gauge metric
 	upGauge.Set(1)
-
-	// Respond with a simple message
-	fmt.Fprintf(w, "Hello from the custom Go app!\n")
 }
 
 func main() {
-	// Expose the /metrics endpoint for Prometheus scraping
+	defer fmt.Println("Application Exiting...")
+	fmt.Println("Application... Starting")
+
+	/*
+		prom has a handler that can handle /metrics
+	*/
 	http.Handle("/metrics", promhttp.Handler())
 
-	// Define HTTP routes for your application
 	http.HandleFunc("/", handler)
 
-	// Start HTTP server
 	go func() {
 		for {
-			// Simulate the app being down periodically
 			time.Sleep(10 * time.Second)
 			upGauge.Set(0)
 			time.Sleep(10 * time.Second)
@@ -64,6 +65,5 @@ func main() {
 	}()
 
 	fmt.Println("ListenAndServe... Starting")
-	// Start the server
 	http.ListenAndServe(":8080", nil)
 }
